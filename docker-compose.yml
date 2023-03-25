@@ -1,0 +1,59 @@
+version: "3.8"
+services:
+  # zerotier网络
+  zerotier:
+    build: ./zerotier
+    volumes:
+      - zerotier-one:/var/lib/zerotier-one
+      - ./gai.conf:/etc/gai.conf
+    devices:
+      - "/dev/net/tun"
+    cap_add:
+      - NET_ADMIN
+      - SYS_ADMIN
+      - NET_BROADCAST
+    sysctls:
+      - "net.ipv4.ip_forward=1"
+      - "net.ipv6.conf.all.disable_ipv6=0"
+      - "net.ipv6.conf.all.forwarding=1" # 必须为container开启v6 forwarding，因为它默认不会继承init_net的值，参考：https://unix.stackexchange.com/questions/690999/ipv6-forwarding-doesnt-work-in-a-network-namespace
+      # 此外，如果host上使用的防火墙是 firewalld ，务必在 firewalld 中设置IPv6_rpfilter=no，否则数据包将无法被转发到别的服务
+      - "net.ipv4.conf.all.rp_filter=0" # 允许数据包去程和回程不一致的情况，这在dn42网络中非常常见，并且在存在多个RS的情况下十分重要
+      - "net.ipv4.conf.default.rp_filter=0"
+    networks:
+      default:
+        ipv4_address: 172.30.220.201
+        ipv6_address: fdfb:e21a:fe54:c98d:4bef:9f1b:fd3b:d681
+    extra_hosts:
+      - "dn42.burble.com:104.21.86.94"
+    ports:
+      - "23751:23751/udp" # dn42 zerotier-one
+    command: '8286ac0e475dbeec'
+    dns:
+      - 172.20.0.53 # wildly used dns server in dn42. Or you can change this to your dns service ip address
+    restart: always
+  # BGP服务
+  bgp:
+    build: ./bgp
+    devices:
+      - "/dev/net/tun"
+    cap_add:
+      - NET_ADMIN
+      - SYS_ADMIN
+      - NET_BROADCAST
+    network_mode: "service:zerotier"
+    depends_on:
+      - zerotier
+    restart: always
+
+networks:
+  default:
+    driver: bridge
+    enable_ipv6: true
+    internal: false # 控制能否通过host访问外部网络。需要设置为false，否则docker生成的防火墙规则会阻止其余服务将数据包转 发到bgp服务
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.30.220.200/31
+        - subnet: fdfb:e21a:fe54:c98d:4bef:9f1b:fd3b:d680/127
+volumes:
+  zerotier-one:
