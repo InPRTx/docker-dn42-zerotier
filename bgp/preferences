@@ -7,6 +7,6 @@ Pin-Priority: 10
 Package: *
 Pin: release o=Debian
 Pin-Priority: -10
-Package: *
+Package: bird2
 Pin: release o=Debian Backports
 Pin-Priority: 501
