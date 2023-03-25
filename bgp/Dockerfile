@@ -7,7 +7,7 @@ RUN mkdir -p /tmp && chmod 777 /tmp && mkdir -p /var/cache/apt/archives/partial 
     apt-get update && apt-get install -y apt-utils
 
 RUN apt-get update && \
-    apt-get install -y curl cron iptables iproute2 mtr-tiny inetutils-ping dnsutils net-tools bird2 tcpdump procps htop gnupg python3-pip
+    apt-get install -y curl cron iptables iproute2 mtr-tiny inetutils-ping dnsutils net-tools bird2 tcpdump procps htop gnupg python3-pip gcc python3-dev
 RUN pip3 install psutil ipaddress
 
 RUN mkdir -p /app && mkdir -p /etc/bird/peers && mkdir -p /etc/bird/ibgps && mkdir -p /run/bird/ && \
