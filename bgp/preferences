@@ -7,6 +7,6 @@ Pin-Priority: 10
 Package: *
 Pin: release o=Debian
 Pin-Priority: -10
-Package: bird2
+Package: bird2 libbpf0 linux-libc-dev
 Pin: release o=Debian Backports
 Pin-Priority: 501
