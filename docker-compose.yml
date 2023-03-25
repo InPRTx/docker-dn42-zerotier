@@ -21,8 +21,8 @@ services:
       - "net.ipv4.conf.default.rp_filter=0"
     networks:
       default:
-        ipv4_address: 172.30.220.201
-        ipv6_address: fdfb:e21a:fe54:c98d:4bef:9f1b:fd3b:d681
+        ipv4_address: 172.30.220.202
+        ipv6_address: fdfb:e21a:fe54:c98d:4bef:9f1b:fd3b:d682
     extra_hosts:
       - "dn42.burble.com:104.21.86.94"
     ports:
@@ -53,7 +53,7 @@ networks:
     ipam:
       driver: default
       config:
-        - subnet: 172.30.220.200/31
-        - subnet: fdfb:e21a:fe54:c98d:4bef:9f1b:fd3b:d680/127
+        - subnet: 172.30.220.200/30
+        - subnet: fdfb:e21a:fe54:c98d:4bef:9f1b:fd3b:d680/126
 volumes:
   zerotier-one:
