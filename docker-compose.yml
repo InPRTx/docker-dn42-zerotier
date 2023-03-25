@@ -5,7 +5,6 @@ services:
     build: ./zerotier
     volumes:
       - zerotier-one:/var/lib/zerotier-one
-      - ./gai.conf:/etc/gai.conf
     devices:
       - "/dev/net/tun"
     cap_add:
