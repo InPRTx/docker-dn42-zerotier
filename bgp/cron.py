@@ -59,7 +59,7 @@ include "/etc/bird/ibgps/*.conf";'''
             return False
         self.config_yaml = yaml.full_load(r.text)
         for name, b in self.config_yaml['ibgp'].items():
-            if b['ipv4'] == self.ipv4_addr:  # 跳过自己
+            if b['ipv4'] in self.ipv4_addr:  # 跳过自己
                 continue
             ibgp_text = f'''protocol bgp ibgp_{name} from IBGP {{
 neighbor {b['ipv6']} as OWNAS;
