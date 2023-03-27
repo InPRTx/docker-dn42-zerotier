@@ -24,6 +24,7 @@ services:
         ipv6_address: fdfb:e21a:fe54:c98d:4bef:9f1b:fd3b:d682
     extra_hosts:
       - "dn42.burble.com:104.21.86.94"
+      - "public.23751.net:104.21.66.196"
     ports:
       - "23751:23751/udp" # dn42 zerotier-one
     command: '8286ac0e475dbeec'
