@@ -33,6 +33,8 @@ services:
   # BGP服务
   bgp:
     build: ./bgp
+    volumes:
+      - ./bgp/bird/:/etc/bird/ # 文件会造成热更新失败
     devices:
       - "/dev/net/tun"
     cap_add:

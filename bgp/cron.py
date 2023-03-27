@@ -24,8 +24,8 @@ class ZTDN42INTERFACE:
     mac: str = None
     is_dn42 = False
 
-    def out_bird(self):
-        config_text = f'''################################################
+    def __out_bird(self):
+        self.bird_config_text = f'''################################################
 #               Variable header                #
 ################################################
 
@@ -42,7 +42,10 @@ define OWNNETv6 = {self.ipv6_addr_prefix};
 include "/etc/bird/birds.conf";
 include "/etc/bird/peers/*.conf";
 include "/etc/bird/ibgps/*.conf";'''
-        print(config_text)
+
+    def write_bird_conf(self):
+        self.__out_bird()
+        open('/etc/bird/bird.conf', 'w').write(self.bird_config_text)  # 追加直接覆盖
 
 
 def is_dn42_interface(nic_interface: list[snicaddr]) -> ZTDN42INTERFACE:
@@ -72,7 +75,8 @@ def get_zt_interface():
         if ('ZeroTier One' in nic_name or 'zt' in nic_name) and is_dn42_interface(nic_interface).is_dn42:
             # print(is_dn42_interface(nic_interface).is_dn42)
             zt_dn42_interface = is_dn42_interface(nic_interface)
-            zt_dn42_interface.out_bird()
+            zt_dn42_interface.write_bird_conf()
+            break
             # print(nic_name, nic_interface[2].address)
 
 

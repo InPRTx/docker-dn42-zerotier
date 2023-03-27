@@ -14,6 +14,7 @@ RUN mkdir -p /app && mkdir -p /etc/bird/peers && mkdir -p /etc/bird/ibgps && mkd
     touch /etc/bird/roa_dn42.conf && touch /etc/bird/roa_dn42_v6.conf
 
 COPY ./crontab.txt /app/crontab.txt
+COPY ./cron.py /app/cron.py
 RUN crontab < /app/crontab.txt
 
 COPY ./enterpoint.sh /enterpoint.sh
