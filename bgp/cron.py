@@ -1,4 +1,6 @@
 import ipaddress
+import os
+import platform
 import re
 
 import psutil
@@ -89,6 +91,21 @@ def is_dn42_interface(nic_interface: list[snicaddr]) -> ZTDN42INTERFACE:
     return zt_dn42_interface
 
 
+def create_dummy_network(zt_dn42_interface: ZTDN42INTERFACE):
+    have_dummy = False
+    for nic_name, nic_interface in psutil.net_if_addrs().items():
+        if 'dn42dummy0' in nic_name:
+            have_dummy = True
+    if platform.system().lower() != 'linux':  # 只支持linux
+        have_dummy = True
+    if have_dummy:
+        return
+    os.system("ip link add dn42dummy0 type dummy")
+    os.system(f"ip addr add {zt_dn42_interface.ipv4_addr}/32 dev dn42dummy0")
+    os.system(f"ip addr add {zt_dn42_interface.ipv6_addr}/128 dev dn42dummy0")
+    os.system("ip link set dn42dummy0 up")
+
+
 def get_zt_interface():
     for nic_name, nic_interface in psutil.net_if_addrs().items():
         if ('ZeroTier One' in nic_name or 'zt' in nic_name) and is_dn42_interface(nic_interface).is_dn42:
@@ -96,6 +113,7 @@ def get_zt_interface():
             zt_dn42_interface = is_dn42_interface(nic_interface)
             zt_dn42_interface.write_bird_conf()
             zt_dn42_interface.write_ibgp()
+            create_dummy_network(zt_dn42_interface)
             break
             # print(nic_name, nic_interface[2].address)
 
