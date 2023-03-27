@@ -2,7 +2,11 @@ import ipaddress
 import re
 
 import psutil
+import requests
+import yaml
 from psutil._common import snicaddr
+
+s = requests.Session()
 
 
 class CUSTONSET:
@@ -44,9 +48,23 @@ include "/etc/bird/birds.conf";
 include "/etc/bird/peers/*.conf";
 include "/etc/bird/ibgps/*.conf";'''
 
-    def write_bird_conf(self):
+    def write_bird_conf(self) -> bool:
         self.__out_bird()
         open('/etc/bird/bird.conf', 'w').write(self.bird_config_text)  # 追加直接覆盖
+        return True
+
+    def write_ibgp(self) -> bool:
+        r = s.get('https://public.23751.net/dn42/info.yml')
+        if r.status_code // 200 != 1:
+            return False
+        self.config_yaml = yaml.full_load(r.text)
+        for name, b in self.config_yaml['ibgp'].items():
+            if b['ipv4'] == self.ipv4_addr and b['ipv6'] == self.ipv6_addr:  # 跳过自己
+                continue
+            ibgp_text = f'''protocol bgp ibgp_{name} from ibgp {{
+neighbor {b['ipv6']} as OWNAS;
+}}'''
+            open(f'/etc/bird/ibgps/{name}.conf', 'w').write(ibgp_text)
 
 
 def is_dn42_interface(nic_interface: list[snicaddr]) -> ZTDN42INTERFACE:
@@ -77,6 +95,7 @@ def get_zt_interface():
             # print(is_dn42_interface(nic_interface).is_dn42)
             zt_dn42_interface = is_dn42_interface(nic_interface)
             zt_dn42_interface.write_bird_conf()
+            zt_dn42_interface.write_ibgp()
             break
             # print(nic_name, nic_interface[2].address)
 
