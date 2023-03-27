@@ -59,7 +59,7 @@ include "/etc/bird/ibgps/*.conf";'''
             return False
         self.config_yaml = yaml.full_load(r.text)
         for name, b in self.config_yaml['ibgp'].items():
-            if b['ipv4'] in self.ipv4_addr:  # 跳过自己
+            if b['ipv4'] == self.ipv4_addr:  # 跳过自己
                 continue
             ibgp_text = f'''protocol bgp ibgp_{name} from IBGP {{
 neighbor {b['ipv6']} as OWNAS;
@@ -75,11 +75,11 @@ def is_dn42_interface(nic_interface: list[snicaddr]) -> ZTDN42INTERFACE:
             continue
         ip_addr = ipaddress.ip_network(addr.address)
         if DN42RULE.ipv4_netmask.overlaps(ip_addr):
-            zt_dn42_interface.ipv4_addr = ip_addr.network_address
+            zt_dn42_interface.ipv4_addr = ip_addr.network_address.__str__()
             zt_dn42_interface.ipv4_addr_prefix = ipaddress.ip_network(
                 f'{ip_addr.network_address}/{CUSTONSET.min_ipv4_subnet}', False)
         elif DN42RULE.ipv6_netmask.overlaps(ip_addr):
-            zt_dn42_interface.ipv6_addr = ip_addr.network_address
+            zt_dn42_interface.ipv6_addr = ip_addr.network_address.__str__()
             zt_dn42_interface.ipv6_addr_prefix = ipaddress.ip_network(
                 f'{ip_addr.network_address}/{CUSTONSET.min_ipv6_subnet}', False)
         elif ip_addr.version == 6 and addr.address.startswith('fe80'):
