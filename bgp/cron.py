@@ -1,4 +1,5 @@
 import ipaddress
+import re
 
 import psutil
 from psutil._common import snicaddr
@@ -51,7 +52,7 @@ include "/etc/bird/ibgps/*.conf";'''
 def is_dn42_interface(nic_interface: list[snicaddr]) -> ZTDN42INTERFACE:
     zt_dn42_interface = ZTDN42INTERFACE()
     for addr in nic_interface:
-        if '-' in addr.address:  # 这是mac地址
+        if '-' in addr.address or re.match(r'([0-9a-f]{2}:){5}[0-9a-f]{2}', addr.address.lower()):  # 这是mac地址
             zt_dn42_interface.mac = addr.address
             continue
         ip_addr = ipaddress.ip_network(addr.address)
