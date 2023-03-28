@@ -32,7 +32,7 @@ services:
       - 172.20.0.53 # wildly used dns server in dn42. Or you can change this to your dns service ip address
     restart: always
   babeld:
-    build: ./bgp
+    build: ./babeld
     volumes:
       - ./babeld/babeld.conf:/etc/babeld.conf # 文件会造成热更新失败
     devices:
