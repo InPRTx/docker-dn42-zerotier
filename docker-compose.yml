@@ -36,8 +36,6 @@ services:
     build: ./babeld
     volumes:
       - ./babeld/babeld.conf:/etc/babeld.conf # 文件会造成热更新失败
-    devices:
-      - "/dev/net/tun"
     privileged: true
     network_mode: "service:zerotier"
     depends_on:
@@ -48,8 +46,6 @@ services:
     build: ./bgp
     volumes:
       - ./bgp/bird/:/etc/bird/ # 文件会造成热更新失败
-    devices:
-      - "/dev/net/tun"
     cap_add:
       - NET_ADMIN
       - SYS_ADMIN

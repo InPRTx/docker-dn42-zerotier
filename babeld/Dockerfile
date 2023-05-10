@@ -1,8 +1,12 @@
-FROM debian:bullseye-backports
+FROM debian:bookworm-backports
 
-COPY ./preferences /etc/apt/preferences
+RUN mkdir -p /tmp && chmod 777 /tmp && mkdir -p /var/cache/apt/archives/partial /var/tmp/ && \
+     apt-get update && \
+    apt-get install -y curl cron iptables iproute2 mtr-tiny inetutils-ping dnsutils net-tools bird2 tcpdump procps htop gnupg babeld python3-psutil python3-requests python3-yaml&&  rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /var/cache/apt/archives/partial /var/tmp/ && \
     apt-get update && apt-get install -y babeld && rm -rf /var/lib/apt/lists/*
 
-CMD ["/usr/sbin/babeld", "-c", "/etc/babeld.conf"]
+COPY ./enterpoint.sh /enterpoint.sh
+
+CMD ["/enterpoint.sh"]
