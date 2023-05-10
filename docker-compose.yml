@@ -3,6 +3,7 @@ services:
   # zerotier网络
   zerotier:
     build: ./zerotier
+    container_name: docker-dn42-zerotier-zerotier
     volumes:
       - zerotier-one:/var/lib/zerotier-one
     devices:
@@ -32,8 +33,21 @@ services:
       - 172.20.0.53 # wildly used dns server in dn42. Or you can change this to your dns service ip address
       - 8.8.8.8
     restart: always
+  host_script:
+    build: ./host_script
+    container_name: docker-dn42-zerotier-host-script
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./bgp/bird/:/etc/bird/ # 文件会造成热更新失败
+      - ./host_script/wireguard/:/etc/wireguard/ # 文件会造成热更新失败
+    network_mode: "host"
+    privileged: true
+    depends_on:
+      - zerotier
+    restart: always
   babeld:
     build: ./babeld
+    container_name: docker-dn42-zerotier-babeld
     volumes:
       - ./babeld/babeld.conf:/etc/babeld.conf # 文件会造成热更新失败
     privileged: true
@@ -44,8 +58,10 @@ services:
   # BGP服务
   bgp:
     build: ./bgp
+    container_name: docker-dn42-zerotier-bgp
     volumes:
       - ./bgp/bird/:/etc/bird/ # 文件会造成热更新失败
+      - ./host_script/wireguard/:/etc/wireguard/
     cap_add:
       - NET_ADMIN
       - SYS_ADMIN
