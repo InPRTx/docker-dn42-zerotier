@@ -107,7 +107,7 @@ protocol bgp as424242{asn}_{server_name}_v6 from dnpeers {{
 def write_iptables(listen_port: int):
     if not any(item.get('destination_port') == str(listen_port) for item in get_prerouting_dnat_rules()):
         msg = os.popen(
-            f'nft add rule nat prerouting udp dport {listen_port} dnat to 172.30.220.202').read()
+            f'iptables-nft -t nat -A PREROUTING -p udp --dport {listen_port} -j DNAT --to-destination 172.30.220.202').read()
         print(msg)
 
 
@@ -131,7 +131,7 @@ def resolve_host(hostname: str, self_no_ipv4=False, self_no_ipv6=False) -> str:
 
 
 def get_prerouting_dnat_rules() -> list[dict]:
-    rules = os.popen('iptables -t nat -S PREROUTING').read().strip().split('\n')
+    rules = os.popen('iptables-nft -t nat -S PREROUTING').read().strip().split('\n')
     prerouting_rules = []
     for rule in rules:
         parts = rule.split()
