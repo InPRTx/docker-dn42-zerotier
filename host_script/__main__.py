@@ -9,7 +9,6 @@ import aiohttp
 import docker
 import yaml
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from iso3166 import countries
 
 aio_scheduler = AsyncIOScheduler(timezone="Asia/Shanghai")
 client = docker.from_env()
@@ -36,27 +35,7 @@ class SelfConf:
     asn = 4242423751
     zt_ipv4_list = []
     zt_ipv6_list = []
-    regions = {
-        '41': ['NL'],
-        '43': ['US'],
-        '51': ['TH', 'SG', 'PH', 'ID', 'MY'],
-        '52': ['JP', 'CN', 'KR']
-    }
-    country_alpha, server_name, region, country = None, None, None, None
-
-    # (64511, 41) :: Europe
-    # (64511, 42) :: North America-E
-    # (64511, 43) :: North America-C
-    # (64511, 44) :: North America-W
-    # (64511, 45) :: Central America
-    # (64511, 46) :: South America-E
-    # (64511, 47) :: South America-W
-    # (64511, 48) :: Africa-N (above Sahara)
-    # (64511, 49) :: Africa-S (below Sahara)
-    # (64511, 50) :: Asia-S (IN,PK,BD)
-    # (64511, 51) :: Asia-SE (TH,SG,PH,ID,MY)
-    # (64511, 52) :: Asia-E (JP,CN,KR)
-    # (64511, 53) :: Pacific
+    server_name, region, country = None, None, None
 
     async def async_init(self):
         while True:  # 初始化配置，失败15秒
@@ -89,12 +68,9 @@ class SelfConf:
             self.create_dummy_ifname(zt_ipv4_list, zt_ipv6_list)
             for name, b in config['servers'].items():
                 if b['ipv4'] in zt_ipv4_list:
-                    self.country_alpha = name.split('-')[0]
-                    self.server_name = name.split('-')[1]
-
-                    region, country = self.__get_dn42_bgp_community(self.country_alpha)
-                    self.region = b['region'] if 'region' in b else region
-                    self.country = b['country'] if 'country' in b else country
+                    self.server_name = name
+                    self.region = config['community'][name[:3]][0]
+                    self.country = config['community'][name[:3]][1]
                     continue
         return True
 
@@ -132,12 +108,6 @@ include "/etc/bird/birds.conf";
 include "/etc/bird/peers/*.conf";
 include "/etc/bird/ibgps/*.conf";'''
         open('/etc/bird/bird.conf', 'w').write(bird_config_text)  # 追加直接覆盖
-
-    def __get_dn42_bgp_community(self, county: str) -> (str, str):
-        for region, countys in self.regions.items():
-            if county.upper() in countys:
-                return region, f'1{countries.get(county).numeric}'
-        return '0', '0'
 
 
 def write_bgp_asn(server_name: str, asn: int, host: str, __prv_key: str, __pub_key: str, port=23751, mtu=1400,
@@ -245,8 +215,7 @@ async def update_dn42_data(bird_c=True) -> None:
         os.remove(ibgps_file)  # TODO 升级为删除旧版本的配置文件
     for name, b in config['servers'].items():
         if b['ipv4'] in zt_ipv4_list:
-            county = name.split('-')[0]
-            server_name = name.split('-')[1]
+            server_name = name
             continue
         if 'peer' in b and not b['peer']:
             continue
