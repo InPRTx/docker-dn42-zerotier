@@ -9,6 +9,7 @@ import aiohttp
 import docker
 import yaml
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from iso3166 import countries
 
 aio_scheduler = AsyncIOScheduler(timezone="Asia/Shanghai")
 client = docker.from_env()
@@ -31,31 +32,97 @@ def get_iface_ip(container_bgp_networks: dict, ifname: str) -> [dict, dict]:
     return ipv4_list, ipv6_list
 
 
-def create_dummy_ifname(zt_ipv4_list: list, zt_ipv6_list: list) -> None:
-    client.containers.get('docker-dn42-zerotier-zerotier').exec_run(f'ip link add dn42dummy0 type dummy')
-    for zt_ipv4 in zt_ipv4_list:
-        client.containers.get('docker-dn42-zerotier-zerotier').exec_run(f'ip addr add {zt_ipv4}/32 dev dn42dummy0')
-    for zt_ipv6 in zt_ipv6_list:
-        client.containers.get('docker-dn42-zerotier-zerotier').exec_run(f'ip addr add {zt_ipv6}/128 dev dn42dummy0')
-    client.containers.get('docker-dn42-zerotier-zerotier').exec_run('ip link set dn42dummy0 up')
-    write_bird(zt_ipv4_list[0], zt_ipv6_list[0])
-
-
-def write_bird(zt_ipv4: str, zt_ipv6: str):
+class SelfConf:
     asn = 4242423751
-    ipv4_addr_prefix = ipaddress.ip_network(
-        f'{zt_ipv4}/29', False).network_address.__str__()
-    ipv6_addr_prefix = ipaddress.ip_network(
-        f'{zt_ipv6}/60', False).network_address.__str__()
-    bird_config_text = f'''################################################
+    zt_ipv4_list = []
+    zt_ipv6_list = []
+    regions = {
+        '41': ['NL'],
+        '43': ['US'],
+        '51': ['TH', 'SG', 'PH', 'ID', 'MY'],
+        '52': ['JP', 'CN', 'KR']
+    }
+    country_alpha, server_name, region, country = None, None, None, None
+
+    # (64511, 41) :: Europe
+    # (64511, 42) :: North America-E
+    # (64511, 43) :: North America-C
+    # (64511, 44) :: North America-W
+    # (64511, 45) :: Central America
+    # (64511, 46) :: South America-E
+    # (64511, 47) :: South America-W
+    # (64511, 48) :: Africa-N (above Sahara)
+    # (64511, 49) :: Africa-S (below Sahara)
+    # (64511, 50) :: Asia-S (IN,PK,BD)
+    # (64511, 51) :: Asia-SE (TH,SG,PH,ID,MY)
+    # (64511, 52) :: Asia-E (JP,CN,KR)
+    # (64511, 53) :: Pacific
+
+    async def async_init(self):
+        while True:  # 初始化配置，失败15秒
+            if await self.update_conf():
+                break
+            await asyncio.sleep(15)
+
+    async def update_conf(self) -> bool:
+        if not client.containers.get('docker-dn42-zerotier-babeld') \
+                or not client.containers.get('docker-dn42-zerotier-host-script') \
+                or not client.containers.get('docker-dn42-zerotier-zerotier'):
+            return False  # 容器未创建则退出
+        async with aiohttp.ClientSession() as s:
+            rs = await s.get('https://public.23751.net/dn42/info.yml')
+        if rs.status != 200:
+            return False
+        config = yaml.full_load(await rs.text())
+        container_bgp_networks = json.loads(
+            client.containers.get('docker-dn42-zerotier-zerotier').exec_run('ip --json address show').output.decode(
+                'utf-8'))
+        if any(iface.get('ifname') == 'dn42dummy0' for iface in container_bgp_networks):
+            # 判断 dummy 网卡 是否跟 dn42 网卡地址一样，删除网卡
+            self.zt_ipv4_list, self.zt_ipv6_list = get_iface_ip(container_bgp_networks, 'zt')
+            dy_ipv4_list, dy_ipv6_list = get_iface_ip(container_bgp_networks, 'dn42dummy0')
+            if self.zt_ipv4_list != dy_ipv4_list or self.zt_ipv6_list != dy_ipv6_list:
+                client.containers.get('docker-dn42-zerotier-zerotier').exec_run(f'ip link del dn42dummy0')
+                self.create_dummy_ifname(self.zt_ipv4_list, self.zt_ipv6_list)
+        else:
+            zt_ipv4_list, zt_ipv6_list = get_iface_ip(container_bgp_networks, 'zt')
+            self.create_dummy_ifname(zt_ipv4_list, zt_ipv6_list)
+            for name, b in config['servers'].items():
+                if b['ipv4'] in zt_ipv4_list:
+                    self.country_alpha = name.split('-')[0]
+                    self.server_name = name.split('-')[1]
+
+                    region, country = self.__get_dn42_bgp_community(self.country_alpha)
+                    self.region = b['region'] if 'region' in b else region
+                    self.country = b['country'] if 'country' in b else country
+                    continue
+        return True
+
+    def create_dummy_ifname(self, zt_ipv4_list: list, zt_ipv6_list: list) -> None:
+        client.containers.get('docker-dn42-zerotier-zerotier').exec_run(f'ip link add dn42dummy0 type dummy')
+        for zt_ipv4 in zt_ipv4_list:
+            client.containers.get('docker-dn42-zerotier-zerotier').exec_run(f'ip addr add {zt_ipv4}/32 dev dn42dummy0')
+        for zt_ipv6 in zt_ipv6_list:
+            client.containers.get('docker-dn42-zerotier-zerotier').exec_run(f'ip addr add {zt_ipv6}/128 dev dn42dummy0')
+        client.containers.get('docker-dn42-zerotier-zerotier').exec_run('ip link set dn42dummy0 up')
+        self.write_bird(zt_ipv4_list[0], zt_ipv6_list[0])
+
+    def write_bird(self, zt_ipv4: str, zt_ipv6: str):
+        ipv4_addr_prefix = ipaddress.ip_network(
+            f'{zt_ipv4}/29', False).network_address.__str__()
+        ipv6_addr_prefix = ipaddress.ip_network(
+            f'{zt_ipv6}/60', False).network_address.__str__()
+        bird_config_text = f'''################################################
 #               Variable header                #
 ################################################
 
-define OWNAS =  {asn};
+define OWNAS =  {self.asn};
 define OWNIP =  {zt_ipv4};
 define OWNIPv6 = {zt_ipv6};
 define OWNNET = {ipv4_addr_prefix}/29;
 define OWNNETv6 = {ipv6_addr_prefix}/60;
+define DN42_REGION = {self.region};
+define DN42_COUNTRY = {self.country};
 
 ################################################
 #                 Header end                   #
@@ -64,10 +131,16 @@ define OWNNETv6 = {ipv6_addr_prefix}/60;
 include "/etc/bird/birds.conf";
 include "/etc/bird/peers/*.conf";
 include "/etc/bird/ibgps/*.conf";'''
-    open('/etc/bird/bird.conf', 'w').write(bird_config_text)  # 追加直接覆盖
+        open('/etc/bird/bird.conf', 'w').write(bird_config_text)  # 追加直接覆盖
+
+    def __get_dn42_bgp_community(self, county: str) -> (str, str):
+        for region, countys in self.regions.items():
+            if county.upper() in countys:
+                return region, f'1{countries.get(county).numeric}'
+        return '0', '0'
 
 
-def write_bgp_asn(server_name: str, asn: int, host: str, prv_key: str, pub_key: str, port=23751, mtu=1400,
+def write_bgp_asn(server_name: str, asn: int, host: str, __prv_key: str, __pub_key: str, port=23751, mtu=1400,
                   listen_port: int = None,
                   self_fe80: str = None,
                   peer_fe80: str = None):
@@ -80,14 +153,14 @@ def write_bgp_asn(server_name: str, asn: int, host: str, prv_key: str, pub_key: 
     wg_config_text = f'''[Interface]
 # Name: wg{asn}
 
-PrivateKey = {prv_key}
+PrivateKey = {__prv_key}
 PostUp = ip addr add dev %i {self_fe80} peer {peer_fe80}/128
 ListenPort = {listen_port}
 Table = off
 Mtu = {mtu}
 
 [Peer]
-PublicKey = {pub_key}
+PublicKey = {__pub_key}
 Endpoint = {host}:{port}
 AllowedIPs = 10.0.0.0/8, 172.20.0.0/14, 172.31.0.0/16, fd00::/8, fe00::/8'''
     with open(f'/etc/wireguard/wg{asn}{server_name}.conf', 'w') as f:
@@ -172,12 +245,13 @@ async def update_dn42_data(bird_c=True) -> None:
         os.remove(ibgps_file)  # TODO 升级为删除旧版本的配置文件
     for name, b in config['servers'].items():
         if b['ipv4'] in zt_ipv4_list:
-            server_name = name
+            county = name.split('-')[0]
+            server_name = name.split('-')[1]
             continue
         if 'peer' in b and not b['peer']:
             continue
-        ibgp_text = f'protocol bgp ibgp_{name} from IBGP {{\nneighbor {b["ipv6"]} as OWNAS;}}'
-        with open(f'/etc/bird/ibgps/{name}.conf', 'w') as f:
+        ibgp_text = f'protocol bgp ibgp_{server_name} from IBGP {{\nneighbor {b["ipv6"]} as OWNAS;}}'
+        with open(f'/etc/bird/ibgps/{server_name}.conf', 'w') as f:
             f.write(ibgp_text)
     if not server_name:  # 配置文件不存在本机就不配置
         return
@@ -203,32 +277,13 @@ async def update_dn42_data(bird_c=True) -> None:
         client.containers.get('docker-dn42-zerotier-bgp').exec_run('birdc c')
 
 
-async def job1() -> None:
-    if not client.containers.get('docker-dn42-zerotier-babeld') \
-            or not client.containers.get('docker-dn42-zerotier-host-script') \
-            or not client.containers.get('docker-dn42-zerotier-zerotier'):
-        return  # 容器未创建则退出
-    container_bgp_networks = json.loads(
-        client.containers.get('docker-dn42-zerotier-zerotier').exec_run('ip --json address show').output.decode(
-            'utf-8'))
-    if any(iface.get('ifname') == 'dn42dummy0' for iface in container_bgp_networks):
-        # 判断 dummy 网卡 是否跟 dn42 网卡地址一样，删除网卡
-        zt_ipv4_list, zt_ipv6_list = get_iface_ip(container_bgp_networks, 'zt')
-        dy_ipv4_list, dy_ipv6_list = get_iface_ip(container_bgp_networks, 'dn42dummy0')
-
-        if zt_ipv4_list != dy_ipv4_list or zt_ipv6_list != dy_ipv6_list:
-            client.containers.get('docker-dn42-zerotier-zerotier').exec_run(f'ip link del dn42dummy0')
-            create_dummy_ifname(zt_ipv4_list, zt_ipv6_list)
-    else:
-        zt_ipv4_list, zt_ipv6_list = get_iface_ip(container_bgp_networks, 'zt')
-        create_dummy_ifname(zt_ipv4_list, zt_ipv6_list)
+self_conf = SelfConf()
 
 
 async def main():
     print('server wg pubkey:', pub_key)
-    await job1()
+    await self_conf.async_init()
     await update_dn42_data(False)
-    aio_scheduler.add_job(job1, 'interval', minutes=1)
     aio_scheduler.add_job(update_dn42_data, 'interval', minutes=15)
     aio_scheduler.start()
     while True:
