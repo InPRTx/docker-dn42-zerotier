@@ -104,10 +104,10 @@ protocol bgp as424242{asn}_{server_name}_v6 from dnpeers {{
         f.write(bird_peer_config_text)
 
 
-def write_iptables(self_port: int):
-    if not any(item.get('destination_port') == str(self_port) for item in get_prerouting_dnat_rules()):
+def write_iptables(listen_port: int):
+    if not any(item.get('destination_port') == str(listen_port) for item in get_prerouting_dnat_rules()):
         os.system(
-            f'iptables -t nat -A PREROUTING -p udp --dport {self_port} -j DNAT --to-destination 172.30.220.202')
+            f'iptables -t nat -A PREROUTING -p udp --dport {listen_port} -j DNAT --to-destination 172.30.220.202')
 
 
 def resolve_host(hostname: str, self_no_ipv4=False, self_no_ipv6=False) -> str:
