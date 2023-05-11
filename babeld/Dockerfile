@@ -7,7 +7,7 @@ RUN mkdir -p /tmp && chmod 777 /tmp && mkdir -p /var/cache/apt/archives/partial 
     rm -rf /var/lib/apt/lists/*
 
 RUN apt-get update && apt-get install -y python3-psutil python3-requests python3-yaml python3-apscheduler python3-docker python3-aiohttp python3-iso3166 &&  \
-    && rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/*
 
 COPY ./enterpoint.sh /enterpoint.sh
 
