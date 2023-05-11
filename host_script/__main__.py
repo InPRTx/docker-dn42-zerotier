@@ -32,12 +32,12 @@ def get_iface_ip(container_bgp_networks: dict, ifname: str) -> [dict, dict]:
 
 
 def create_dummy_ifname(zt_ipv4_list: list, zt_ipv6_list: list) -> None:
-    client.containers.get('docker-dn42-zerotier-bgp').exec_run(f'ip link add dn42dummy0 type dummy')
+    client.containers.get('docker-dn42-zerotier-zerotier').exec_run(f'ip link add dn42dummy0 type dummy')
     for zt_ipv4 in zt_ipv4_list:
-        client.containers.get('docker-dn42-zerotier-bgp').exec_run(f'ip addr add {zt_ipv4}/32 dev dn42dummy0')
+        client.containers.get('docker-dn42-zerotier-zerotier').exec_run(f'ip addr add {zt_ipv4}/32 dev dn42dummy0')
     for zt_ipv6 in zt_ipv6_list:
-        client.containers.get('docker-dn42-zerotier-bgp').exec_run(f'ip addr add {zt_ipv6}/128 dev dn42dummy0')
-    client.containers.get('docker-dn42-zerotier-bgp').exec_run('ip link set dn42dummy0 up')
+        client.containers.get('docker-dn42-zerotier-zerotier').exec_run(f'ip addr add {zt_ipv6}/128 dev dn42dummy0')
+    client.containers.get('docker-dn42-zerotier-zerotier').exec_run('ip link set dn42dummy0 up')
     write_bird(zt_ipv4_list[0], zt_ipv6_list[0])
 
 
