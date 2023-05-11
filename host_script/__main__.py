@@ -21,7 +21,6 @@ if not os.path.exists(public_key_file):
     os.system(f"cat {private_key_file} | wg pubkey > {public_key_file}")
 prv_key = open(private_key_file, 'r').read()
 pub_key = open(public_key_file, 'r').read()
-print('执行了')
 
 
 def get_iface_ip(container_bgp_networks: dict, ifname: str) -> [dict, dict]:
@@ -69,9 +68,9 @@ include "/etc/bird/ibgps/*.conf";'''
 
 
 def write_bgp_asn(server_name: str, asn: int, host: str, prv_key: str, pub_key: str, port=23751, mtu=1400,
-                  listen_port=None,
-                  self_fe80=None,
-                  peer_fe80=None):
+                  listen_port: int = None,
+                  self_fe80: str = None,
+                  peer_fe80: str = None):
     if not listen_port:  # 默认监听对方asn端口号
         listen_port = f'2{asn}'
     if not self_fe80:
@@ -105,8 +104,10 @@ protocol bgp as424242{asn}_{server_name}_v6 from dnpeers {{
         f.write(bird_peer_config_text)
 
 
-def write_iptables(self_port: int, peer_port: int):
-    pass
+def write_iptables(self_port: int):
+    if not any(item.get('destination_port') == self_port for item in get_prerouting_dnat_rules()):
+        os.system(
+            f'iptables -t nat -A PREROUTING -p udp --dport {self_port} -j DNAT --to-destination 172.30.220.202')
 
 
 def resolve_host(hostname: str, self_no_ipv4=False, self_no_ipv6=False) -> str:
@@ -126,6 +127,26 @@ def resolve_host(hostname: str, self_no_ipv4=False, self_no_ipv6=False) -> str:
     if host_ipv6 and self_no_ipv6:
         return host_ipv6
     return host_ipv4
+
+
+def get_prerouting_dnat_rules() -> list[dict]:
+    rules = os.popen('iptables -t nat -S PREROUTING').read().strip().split('\n')
+    prerouting_rules = []
+    for rule in rules:
+        parts = rule.split()
+        prerouting_rule = {'rule': parts[0]}
+        for i in range(1, len(parts)):
+            if parts[i] == '-p':
+                prerouting_rule['protocol'] = parts[i + 1]
+            elif parts[i] == '-d':
+                prerouting_rule['destination'] = parts[i + 1]
+            elif parts[i] == '--dport':
+                prerouting_rule['destination_port'] = parts[i + 1]
+            elif parts[i] == '-j':
+                prerouting_rule['target'] = parts[i + 1]
+        if 'target' in prerouting_rule and prerouting_rule['target'] == 'DNAT':
+            prerouting_rules.append(prerouting_rule)
+    return prerouting_rules
 
 
 async def update_dn42_data(bird_c=True) -> None:
@@ -162,10 +183,16 @@ async def update_dn42_data(bird_c=True) -> None:
     no_ipv6 = config['servers'][server_name]['no_ipv6'] if 'no_ipv6' in config['servers'][server_name] else False
     for wg in config['servers'][server_name]['wg']:  # 生成wg隧道配置，接口不存在则配置
         host = resolve_host(wg['host'], no_ipv4, no_ipv6)
-        write_bgp_asn(wg['name'], wg['asn'], host, prv_key, wg['pub_key'])
+        listen_port = wg['listen_port'] if 'listen_port' in wg else int(f"2{wg['asn']}")
+        port = wg['port'] if 'port' in wg else 23751
+        mtu = wg['mtu'] if 'mtu' in wg else 1400
+        self_fe80 = wg['self_fe80'] if 'self_fe80' in wg else f"fe80::3751"
+        peer_fe80 = wg['peer_fe80'] if 'peer_fe80' in wg else f"fe80::{wg['asn']}"
+        write_bgp_asn(wg['name'], wg['asn'], host, prv_key, wg['pub_key'], port, mtu, listen_port, self_fe80, peer_fe80)
         if not any(iface.get('ifname') == f"wg{wg['asn']}{server_name}" for iface in container_bgp_networks):
             print('启动接口', f"wg-quick up wg{wg['asn']}{server_name}")
             client.containers.get('docker-dn42-zerotier-bgp').exec_run(f"wg-quick up wg{wg['asn']}{server_name}")
+            write_iptables(listen_port)
     if bird_c:
         client.containers.get('docker-dn42-zerotier-bgp').exec_run('birdc c')
 
