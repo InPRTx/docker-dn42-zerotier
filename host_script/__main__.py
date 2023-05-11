@@ -222,8 +222,8 @@ async def job1() -> None:
 
 async def main():
     print('server wg pubkey:', pub_key)
-    await update_dn42_data(False)
     await job1()
+    await update_dn42_data(False)
     aio_scheduler.add_job(job1, 'interval', minutes=1)
     aio_scheduler.add_job(update_dn42_data, 'interval', minutes=15)
     aio_scheduler.start()
