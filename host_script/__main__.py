@@ -159,7 +159,8 @@ async def update_dn42_data(bird_c=True) -> None:
     if r4.status != 200 or r6.status != 200 or rs.status != 200:
         return
     container_bgp_networks = json.loads(
-        client.containers.get('docker-dn42-zerotier-bgp').exec_run('ip --json address show').output.decode('utf-8'))
+        client.containers.get('docker-dn42-zerotier-zerotier').exec_run('ip --json address show').output.decode(
+            'utf-8'))
     zt_ipv4_list, zt_ipv6_list = get_iface_ip(container_bgp_networks, 'zt')
     server_name = None
     with open('/etc/bird/roa_dn42_v4.conf', 'w') as f:
@@ -199,20 +200,20 @@ async def update_dn42_data(bird_c=True) -> None:
 
 
 async def job1() -> None:
-    if not client.containers.get('docker-dn42-zerotier-bgp') \
-            or not client.containers.get('docker-dn42-zerotier-babeld') \
+    if not client.containers.get('docker-dn42-zerotier-babeld') \
             or not client.containers.get('docker-dn42-zerotier-host-script') \
             or not client.containers.get('docker-dn42-zerotier-zerotier'):
         return  # 容器未创建则退出
     container_bgp_networks = json.loads(
-        client.containers.get('docker-dn42-zerotier-bgp').exec_run('ip --json address show').output.decode('utf-8'))
+        client.containers.get('docker-dn42-zerotier-zerotier').exec_run('ip --json address show').output.decode(
+            'utf-8'))
     if any(iface.get('ifname') == 'dn42dummy0' for iface in container_bgp_networks):
         # 判断 dummy 网卡 是否跟 dn42 网卡地址一样，删除网卡
         zt_ipv4_list, zt_ipv6_list = get_iface_ip(container_bgp_networks, 'zt')
         dy_ipv4_list, dy_ipv6_list = get_iface_ip(container_bgp_networks, 'dn42dummy0')
 
         if zt_ipv4_list != dy_ipv4_list or zt_ipv6_list != dy_ipv6_list:
-            client.containers.get('docker-dn42-zerotier-bgp').exec_run(f'ip link del dn42dummy0')
+            client.containers.get('docker-dn42-zerotier-zerotier').exec_run(f'ip link del dn42dummy0')
             create_dummy_ifname(zt_ipv4_list, zt_ipv6_list)
     else:
         zt_ipv4_list, zt_ipv6_list = get_iface_ip(container_bgp_networks, 'zt')
