@@ -218,8 +218,8 @@ async def update_dn42_data(bird_c=True) -> None:
             continue
         if 'peer' in b and not b['peer']:
             continue
-        ibgp_text = f'protocol bgp ibgp_{server_name} from IBGP {{\nneighbor {b["ipv6"]} as OWNAS;}}'
-        with open(f'/etc/bird/ibgps/{server_name}.conf', 'w') as f:
+        ibgp_text = f'protocol bgp ibgp_{name} from IBGP {{\nneighbor {b["ipv6"]} as OWNAS;}}'
+        with open(f'/etc/bird/ibgps/{name}.conf', 'w') as f:
             f.write(ibgp_text)
     if not server_name:  # 配置文件不存在本机就不配置
         return
