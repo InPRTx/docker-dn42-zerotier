@@ -65,13 +65,13 @@ class SelfConf:
                 self.create_dummy_ifname(self.zt_ipv4_list, self.zt_ipv6_list)
         else:
             zt_ipv4_list, zt_ipv6_list = get_iface_ip(container_bgp_networks, 'zt')
-            self.create_dummy_ifname(zt_ipv4_list, zt_ipv6_list)
             for name, b in config['servers'].items():
                 if b['ipv4'] in zt_ipv4_list:
                     self.server_name = name
                     self.region = config['community'][name[:3]][0]
                     self.country = config['community'][name[:3]][1]
                     continue
+            self.create_dummy_ifname(zt_ipv4_list, zt_ipv6_list)
         return True
 
     def create_dummy_ifname(self, zt_ipv4_list: list, zt_ipv6_list: list) -> None:
