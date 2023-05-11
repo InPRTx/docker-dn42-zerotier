@@ -56,22 +56,21 @@ class SelfConf:
         container_bgp_networks = json.loads(
             client.containers.get('docker-dn42-zerotier-zerotier').exec_run('ip --json address show').output.decode(
                 'utf-8'))
+        self.zt_ipv4_list, self.zt_ipv6_list = get_iface_ip(container_bgp_networks, 'zt')
+        for name, b in config['servers'].items():
+            if b['ipv4'] in self.zt_ipv4_list:
+                self.server_name = name
+                self.region = config['community'][name[:3]][0]
+                self.country = config['community'][name[:3]][1]
+                continue
         if any(iface.get('ifname') == 'dn42dummy0' for iface in container_bgp_networks):
             # 判断 dummy 网卡 是否跟 dn42 网卡地址一样，删除网卡
-            self.zt_ipv4_list, self.zt_ipv6_list = get_iface_ip(container_bgp_networks, 'zt')
             dy_ipv4_list, dy_ipv6_list = get_iface_ip(container_bgp_networks, 'dn42dummy0')
             if self.zt_ipv4_list != dy_ipv4_list or self.zt_ipv6_list != dy_ipv6_list:
                 client.containers.get('docker-dn42-zerotier-zerotier').exec_run(f'ip link del dn42dummy0')
                 self.create_dummy_ifname(self.zt_ipv4_list, self.zt_ipv6_list)
         else:
-            zt_ipv4_list, zt_ipv6_list = get_iface_ip(container_bgp_networks, 'zt')
-            for name, b in config['servers'].items():
-                if b['ipv4'] in zt_ipv4_list:
-                    self.server_name = name
-                    self.region = config['community'][name[:3]][0]
-                    self.country = config['community'][name[:3]][1]
-                    continue
-            self.create_dummy_ifname(zt_ipv4_list, zt_ipv6_list)
+            self.create_dummy_ifname(self.zt_ipv4_list, self.zt_ipv6_list)
         return True
 
     def create_dummy_ifname(self, zt_ipv4_list: list, zt_ipv6_list: list) -> None:
