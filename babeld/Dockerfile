@@ -7,9 +7,6 @@ RUN mkdir -p /tmp && chmod 777 /tmp && mkdir -p /var/cache/apt/archives/partial 
     python3-psutil python3-requests python3-yaml python3-apscheduler python3-docker python3-aiohttp&&  \
     rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /var/cache/apt/archives/partial /var/tmp/ && \
-    apt-get update && apt-get install -y babeld && rm -rf /var/lib/apt/lists/*
-
 COPY ./enterpoint.sh /enterpoint.sh
 
 CMD ["/enterpoint.sh"]
