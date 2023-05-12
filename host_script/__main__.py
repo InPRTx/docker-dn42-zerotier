@@ -84,7 +84,7 @@ class SelfConf:
 
     def write_bird(self, zt_ipv4: str, zt_ipv6: str):
         ipv4_addr_prefix = ipaddress.ip_network(
-            f'{zt_ipv4}/29', False).network_address.__str__()
+            f'{zt_ipv4}/27', False).network_address.__str__()
         ipv6_addr_prefix = ipaddress.ip_network(
             f'{zt_ipv6}/60', False).network_address.__str__()
         bird_config_text = f'''################################################
@@ -94,7 +94,7 @@ class SelfConf:
 define OWNAS =  {self.asn};
 define OWNIP =  {zt_ipv4};
 define OWNIPv6 = {zt_ipv6};
-define OWNNET = {ipv4_addr_prefix}/29;
+define OWNNET = {ipv4_addr_prefix}/27;
 define OWNNETv6 = {ipv6_addr_prefix}/60;
 define DN42_REGION = {self.region};
 define DN42_COUNTRY = {self.country};
