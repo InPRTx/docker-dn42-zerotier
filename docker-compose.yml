@@ -80,7 +80,7 @@ networks:
     ipam:
       driver: default
       config:
-        - subnet: 172.30.220.200/30
-        - subnet: fdfb:e21a:fe54:c98d:4bef:9f1b:fd3b:d680/126
+        - subnet: 172.30.220.200/29
+        - subnet: fdfb:e21a:fe54:c98d:4bef:9f1b:fd3b:d680/125
 volumes:
   zerotier-one:
