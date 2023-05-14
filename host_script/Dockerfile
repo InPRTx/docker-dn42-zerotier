@@ -13,4 +13,4 @@ RUN mkdir -p /app
 
 COPY ./__main__.py /app/__main__.py
 
-CMD ["python3", "/app/__main__.py"]
+CMD ["python3", "-u", "/app/__main__.py"]
