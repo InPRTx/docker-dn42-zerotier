@@ -148,9 +148,12 @@ protocol bgp as424242{asn}_{server_name}_v6 from dnpeers {{
 
 def write_iptables(listen_port: int):
     if not any(item.get('destination_port') == str(listen_port) for item in get_prerouting_dnat_rules()):
-        msg = os.popen(
-            f'iptables-nft -t nat -A PREROUTING -p udp --dport {listen_port} -j DNAT --to-destination 172.30.220.202').read()
-        print(msg)
+        os.popen(
+            f'iptables-nft -t nat -A PREROUTING -p udp --dport {listen_port} -j DNAT '
+            f'--to-destination 172.30.220.202:{listen_port}')
+        os.popen(
+            f'ip6tables-nft -t nat -A PREROUTING -p udp --dport {listen_port} -j DNAT '
+            f'--to-destination [fdfb:e21a:fe54:c98d:4bef:9f1b:fd3b:d682]:{listen_port}')
 
 
 def resolve_host(hostname: str, self_no_ipv4=False, self_no_ipv6=False) -> str:
