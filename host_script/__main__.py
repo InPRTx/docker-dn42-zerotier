@@ -225,6 +225,7 @@ async def update_dn42_data(bird_c=True) -> None:
         return
     if 'wg' in config['servers'][server_name]:
         for wg in config['servers'][server_name]['wg']:  # 生成wg隧道配置，接口不存在则配置
+            name = config['servers'][server_name]['name']
             no_ipv4 = config['servers'][server_name]['no_ipv4'] if 'no_ipv4' in config['servers'][
                 server_name] else False
             no_ipv6 = config['servers'][server_name]['no_ipv6'] if 'no_ipv6' in config['servers'][
@@ -237,9 +238,9 @@ async def update_dn42_data(bird_c=True) -> None:
             peer_fe80 = wg['peer_fe80'] if 'peer_fe80' in wg else f"fe80::{wg['asn']}"
             write_bgp_asn(wg['name'], wg['asn'], host, prv_key, wg['pub_key'], port, mtu, listen_port, self_fe80,
                           peer_fe80)
-            if not any(iface.get('ifname') == f"wg{wg['asn']}{server_name}" for iface in container_bgp_networks):
-                print('启动接口', f"wg-quick up wg{wg['asn']}{server_name}")
-                client.containers.get('docker-dn42-zerotier-bgp').exec_run(f"wg-quick up wg{wg['asn']}{server_name}")
+            if not any(iface.get('ifname') == f"wg{wg['asn']}{name}" for iface in container_bgp_networks):
+                print('启动接口', f"wg-quick up wg{wg['asn']}{name}")
+                client.containers.get('docker-dn42-zerotier-bgp').exec_run(f"wg-quick up wg{wg['asn']}{name}")
                 write_iptables(listen_port)
     if bird_c:
         client.containers.get('docker-dn42-zerotier-bgp').exec_run('birdc c')
