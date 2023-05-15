@@ -76,10 +76,7 @@ services:
     container_name: docker-dn42-zerotier-anycast
     volumes:
       - ./anycast/bird/:/etc/bird/ # 文件会造成热更新失败
-    cap_add:
-      - NET_ADMIN
-      - SYS_ADMIN
-      - NET_BROADCAST
+    privileged: true
     networks:
       default:
         ipv4_address: 172.30.220.203
