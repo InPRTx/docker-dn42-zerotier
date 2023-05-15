@@ -57,6 +57,7 @@ class SelfConf:
             client.containers.get('docker-dn42-zerotier-zerotier').exec_run('ip --json address show').output.decode(
                 'utf-8'))
         self.zt_ipv4_list, self.zt_ipv6_list = get_iface_ip(container_bgp_networks, 'zt')
+        print('容器的ip为', self.zt_ipv4_list, self.zt_ipv6_list)
         for name, b in config['servers'].items():
             if b['ipv4'] in self.zt_ipv4_list:
                 self.server_name = name
