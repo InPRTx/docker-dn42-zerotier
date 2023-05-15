@@ -71,6 +71,24 @@ services:
       - zerotier
       - babeld
     restart: always
+  anycast:
+    build: ./anycast
+    container_name: docker-dn42-zerotier-anycast
+    volumes:
+      - ./anycast/bird/:/etc/bird/ # 文件会造成热更新失败
+    cap_add:
+      - NET_ADMIN
+      - SYS_ADMIN
+      - NET_BROADCAST
+    networks:
+      default:
+        ipv4_address: 172.30.220.203
+        ipv6_address: fdfb:e21a:fe54:c98d:4bef:9f1b:fd3b:d683
+    depends_on:
+      - zerotier
+      - babeld
+      - bgp
+    restart: always
 
 networks:
   default:
