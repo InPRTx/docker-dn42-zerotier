@@ -86,13 +86,14 @@ services:
       - babeld
       - bgp
     restart: always
-  dns:
+  bind:
     image: ubuntu/bind9
+    container_name: docker-dn42-zerotier-bind
     cap_add:
       - NET_ADMIN
     network_mode: "service:anycast"
     volumes:
-      - ./bind/:/etc/bind/
+      - ./bind9/:/etc/bind/
     restart: always
 
 networks:
