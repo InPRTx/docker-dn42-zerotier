@@ -87,7 +87,7 @@ services:
       - bgp
     restart: always
   dns:
-    build: ubuntu/bind9
+    image: ubuntu/bind9
     cap_add:
       - NET_ADMIN
     network_mode: "service:anycast"
