@@ -8,9 +8,9 @@ $TTL  300 ; default ttl for all RRs
                 300 )   ; Negative Cache TTL
 ;
                         IN  NS    ns1.inprtx.dn42.  ; announce the name server of current zone(domain) to be ns1.inprtx.dn42
-193                     IN  PTR   hk.inprtx.dn42
-195                     IN  PTR   jp.inprtx.dn42
-200                     IN  PTR   sg.inprtx.dn42
-201                     IN  PTR   nl.inprtx.dn42
-196                     IN  PTR   cngz.inprtx.dn42
-197                     IN  PTR   cnsh.inprtx.dn42
+193                     IN  PTR   hk.inprtx.dn42.
+195                     IN  PTR   jp.inprtx.dn42.
+200                     IN  PTR   sg.inprtx.dn42.
+201                     IN  PTR   nl.inprtx.dn42.
+196                     IN  PTR   cngz.inprtx.dn42.
+197                     IN  PTR   cnsh.inprtx.dn42.
