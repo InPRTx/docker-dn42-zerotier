@@ -31,7 +31,6 @@ services:
     command: '8286ac0e475dbeec'
     dns:
       - 172.20.0.53 # wildly used dns server in dn42. Or you can change this to your dns service ip address
-      - 8.8.8.8
     restart: always
   host_script:
     build: ./host_script
