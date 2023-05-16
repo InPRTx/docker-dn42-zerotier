@@ -11,6 +11,14 @@ $TTL  300 ; default ttl for all RRs
 ns1                     IN  A     172.23.173.173
 ns1                     IN  AAAA  fdf4:56da:a360::173
 hk                      IN  A     172.20.229.193
-hk                      IN  AAAA  fdf4:56da:a360:8101::
+hk                      IN  AAAA  fdf4:56da:a360:344::
 jp                      IN  A     172.20.229.195
-jp                      IN  AAAA  fdf4:56da:a360:8301::
+jp                      IN  AAAA  fdf4:56da:a360:392:1::
+sg                      IN  A     172.20.229.200
+sg                      IN  AAAA  fdf4:56da:a360:702::
+nl                      IN  A     172.20.229.201
+nl                      IN  AAAA  fdf4:56da:a360:528::
+cngz                    IN  A     172.20.229.196
+cngz                    IN  AAAA  fdf4:56da:a360:156::
+cnsh                    IN  A     172.20.229.197
+cnsh                    IN  AAAA  fdf4:56da:a360:156:10::
