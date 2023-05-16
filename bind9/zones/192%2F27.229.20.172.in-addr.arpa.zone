@@ -1,0 +1,16 @@
+; 192/27.229.20.172.in-addr.arpa.
+$TTL  300 ; default ttl for all RRs
+@ IN  SOA ns1.inprtx.dn42. me.inprtx.top. ( ; ns1.inprtx.dn42 is the domain of dns server
+         2022032901     ; Serial Number, should be change any time when modify happens
+               3600     ; Refresh
+                180     ; Retry
+              86400     ; Expire
+                300 )   ; Negative Cache TTL
+;
+                        IN  NS    ns1.inprtx.dn42.  ; announce the name server of current zone(domain) to be ns1.inprtx.dn42
+193                     IN  PTR   hk.inprtx.dn42.
+195                     IN  PTR   jp.inprtx.dn42.
+200                     IN  PTR   sg.inprtx.dn42.
+201                     IN  PTR   nl.inprtx.dn42.
+196                     IN  PTR   cngz.inprtx.dn42.
+197                     IN  PTR   cnsh.inprtx.dn42.

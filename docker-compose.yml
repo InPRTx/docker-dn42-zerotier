@@ -30,8 +30,10 @@ services:
       - "23751:23751/udp" # dn42 zerotier-one
     command: '8286ac0e475dbeec'
     dns:
-      - 172.20.0.53 # wildly used dns server in dn42. Or you can change this to your dns service ip address
-      - 8.8.8.8
+      - 172.23.0.53 # wildly used dns server in dn42. Or you can change this to your dns service ip address
+      - "fd42:d42:d42:53::1"
+      - 172.20.0.53
+      - "fd42:d42:d42:54::1"
     restart: always
   host_script:
     build: ./host_script
@@ -81,10 +83,24 @@ services:
       default:
         ipv4_address: 172.30.220.203
         ipv6_address: fdfb:e21a:fe54:c98d:4bef:9f1b:fd3b:d683
+    dns:
+      - 172.23.0.53 # wildly used dns server in dn42. Or you can change this to your dns service ip address
+      - "fd42:d42:d42:53::1"
+      - 172.20.0.53
+      - "fd42:d42:d42:54::1"
     depends_on:
       - zerotier
       - babeld
       - bgp
+    restart: always
+  bind:
+    image: ubuntu/bind9
+    container_name: docker-dn42-zerotier-bind
+    cap_add:
+      - NET_ADMIN
+    network_mode: "service:anycast"
+    volumes:
+      - ./bind9/:/etc/bind/
     restart: always
 
 networks:
